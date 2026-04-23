@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Aegis CyberGraph | Real-Time Fraud Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'Segoe UI', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'SF Mono', 'monospace'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glow-pulse': 'glowPulse 2s ease-in-out infinite',
+                        'slide-in': 'slideIn 0.3s ease-out',
+                        'fade-scale': 'fadeScale 0.2s ease-out',
+                    },
+                    keyframes: {
+                        glowPulse: {
+                            '0%, 100%': { opacity: 0.6, filter: 'blur(4px)' },
+                            '50%': { opacity: 1, filter: 'blur(2px)' },
+                        },
+                        slideIn: {
+                            from: { transform: 'translateX(20px)', opacity: 0 },
+                            to: { transform: 'translateX(0)', opacity: 1 },
+                        },
+                        fadeScale: {
+                            from: { transform: 'scale(0.95)', opacity: 0 },
+                            to: { transform: 'scale(1)', opacity: 1 },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* CRITICAL FIX: Prevent horizontal scrolling and blinking */
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            overflow-x: hidden !important;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+        }
+
+        body {
+            background: #030305;
+            background-image:
+                radial-gradient(circle at 15% 30%, rgba(99, 102, 241, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 85% 70%, rgba(225, 29, 72, 0.08) 0%, transparent 55%),
+                repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.01) 0px, rgba(255, 255, 255, 0.01) 2px, transparent 2px, transparent 8px);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            overflow: hidden;
+        }
+
+        /* Custom scrollbar - modern and sleek */
+        .custom-scroll::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 10px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.4);
+            border-radius: 10px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.6);
+        }
+
+        /* Glass morphism */
+        .glass-premium {
+            background: rgba(8, 8, 12, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .glass-card {
+            background: linear-gradient(135deg, rgba(15, 15, 20, 0.9) 0%, rgba(8, 8, 12, 0.8) 100%);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Node hover effect */
+        .graph-node {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .graph-node:hover {
+            filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.6));
+            transform: scale(1.08);
+        }
+
+        /* Hide scrollbar but keep functionality */
+        .hide-scrollbar {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Row animation */
+        @keyframes rowFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-row {
+            animation: rowFadeIn 0.35s ease-out forwards;
+        }
+
+        /* Glow effects */
+        .glow-red {
+            box-shadow: 0 0 20px rgba(225, 29, 72, 0.3);
+        }
+
+        .glow-amber {
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.25);
+        }
+
+        /* Cyber grid overlay */
+        .cyber-grid-overlay {
+            background-image:
+                linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+    </style>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=JetBrains+Mono:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body class="text-white select-none">
+    <!-- Main App Container - Fixed overflow prevention -->
+    <div class="h-screen w-screen flex flex-col overflow-hidden">
+
+        <!-- Premium Header -->
+        <header class="glass-premium border-b border-white/10 px-6 py-3 flex-shrink-0 relative z-20">
+            <div
+                class="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-indigo-500/60 to-transparent">
+            </div>
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="relative">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                            <svg class="w-5 h-5 text-white drop-shadow-sm" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+                                </path>
+                            </svg>
+                        </div>
+                        <div
+                            class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_8px_#10b981]">
+                        </div>
+                    </div>
+                    <div>
+                        <h1
+                            class="text-xl font-bold tracking-tight bg-gradient-to-r from-white to-indigo-300 bg-clip-text text-transparent">
+                            Aegis <span class="font-mono text-indigo-400">CyberGraph</span></h1>
+                        <p class="text-[10px] text-zinc-500 uppercase tracking-wider">Real-time threat intelligence</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-6">
+                    <!-- Mode Toggle Switch -->
+                    <div class="flex items-center gap-2 bg-black/50 rounded-full p-1 border border-white/10">
+                        <button id="mockModeBtn"
+                            class="px-4 py-1.5 rounded-full text-xs font-bold transition-all bg-indigo-500/30 text-indigo-300 border border-indigo-500/50 shadow-sm">📊
+                            Mock Data</button>
+                        <button id="liveModeBtn"
+                            class="px-4 py-1.5 rounded-full text-xs font-medium text-zinc-400 hover:text-white transition-all">⚡
+                            Live Feed</button>
+                    </div>
+
+                    <!-- System Health Indicator -->
+                    <div
+                        class="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                        <div class="relative">
+                            <span
+                                class="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping"></span>
+                            <span
+                                class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_#10b981]"></span>
+                        </div>
+                        <span class="text-[11px] font-mono font-bold text-emerald-300 tracking-wider">SYSTEM
+                            ACTIVE</span>
+                    </div>
+
+                    <!-- Timestamp -->
+                    <div class="hidden lg:block text-right">
+                        <p class="text-[10px] text-zinc-500 font-mono" id="liveTimestamp">2026-04-23 14:30:22 UTC</p>
+                        <p class="text-[9px] text-zinc-600">WebSocket: READY</p>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Scrollable Content - fixed horizontal overflow -->
+        <main class="flex-1 overflow-y-auto overflow-x-hidden p-5 custom-scroll">
+            <div class="max-w-[1600px] mx-auto">
+
+                <!-- Stats Grid - Premium Cards -->
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-5">
+                    <div
+                        class="glass-card rounded-2xl p-4 border-l-4 border-l-indigo-500 hover:scale-[1.02] transition-transform duration-200">
+                        <p class="text-zinc-400 text-[10px] font-bold uppercase tracking-wider">Total Processed</p>
+                        <p class="text-3xl font-bold font-mono mt-1 text-white" id="statTotal">0</p>
+                        <p class="text-[9px] text-zinc-500 mt-1">last 24h</p>
+                    </div>
+                    <div
+                        class="glass-card rounded-2xl p-4 border-l-4 border-l-amber-500 hover:scale-[1.02] transition-transform">
+                        <p class="text-zinc-400 text-[10px] font-bold uppercase tracking-wider">Suspicious Alerts</p>
+                        <p class="text-3xl font-bold font-mono mt-1 text-amber-400 drop-shadow-[0_0_6px_rgba(245,158,11,0.3)]"
+                            id="statAlerts">0</p>
+                        <p class="text-[9px] text-amber-500/70">⚠️ requires attention</p>
+                    </div>
+                    <div
+                        class="glass-card rounded-2xl p-4 border-l-4 border-l-rose-500 hover:scale-[1.02] transition-transform">
+                        <p class="text-zinc-400 text-[10px] font-bold uppercase tracking-wider">High Risk Cases</p>
+                        <p class="text-3xl font-bold font-mono mt-1 text-rose-400 drop-shadow-[0_0_8px_rgba(225,29,72,0.4)]"
+                            id="statHighRisk">0</p>
+                        <p class="text-[9px] text-rose-500/70">🔴 critical priority</p>
+                    </div>
+                    <div
+                        class="glass-card rounded-2xl p-4 border-l-4 border-l-cyan-500 hover:scale-[1.02] transition-transform">
+                        <p class="text-zinc-400 text-[10px] font-bold uppercase tracking-wider">Active Risky Nodes</p>
+                        <p class="text-3xl font-bold font-mono mt-1 text-cyan-400" id="statNodes">0</p>
+                        <p class="text-[9px] text-zinc-500">in network graph</p>
+                    </div>
+                    <div
+                        class="glass-card rounded-2xl p-4 border-l-4 border-l-emerald-500 hover:scale-[1.02] transition-transform">
+                        <p class="text-zinc-400 text-[10px] font-bold uppercase tracking-wider">Avg Risk Score</p>
+                        <p class="text-3xl font-bold font-mono mt-1 text-emerald-400" id="statAvgScore">0</p>
+                        <p class="text-[9px] text-zinc-500">baseline: 35</p>
+                    </div>
+                </div>
+
+                <!-- Two Column Layout -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+                    <!-- Left Column: Graph + Feed -->
+                    <div class="lg:col-span-2 space-y-5">
+                        <!-- Graph Panel -->
+                        <div class="glass-card rounded-2xl overflow-hidden relative">
+                            <div class="absolute inset-0 cyber-grid-overlay pointer-events-none opacity-20"></div>
+                            <div
+                                class="px-5 py-3 border-b border-white/10 flex justify-between items-center bg-black/40">
+                                <div class="flex items-center gap-3">
+                                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                    </svg>
+                                    <h2 class="text-xs font-bold text-zinc-300 uppercase tracking-wider">Entity Topology
+                                        Map</h2>
+                                </div>
+                                <div class="flex gap-4">
+                                    <span class="flex items-center gap-1.5 text-[9px] text-zinc-400"><span
+                                            class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_#e11d48]"></span>
+                                        Threat Node</span>
+                                    <span class="flex items-center gap-1.5 text-[9px] text-zinc-400"><span
+                                            class="w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_6px_#6366f1]"></span>
+                                        Clean Entity</span>
+                                    <span class="flex items-center gap-1.5 text-[9px] text-zinc-400"><span
+                                            class="w-2 h-2 rounded-full bg-amber-500"></span> Edge Flow</span>
+                                </div>
+                            </div>
+                            <div id="graphContainer"
+                                class="relative w-full h-[380px] bg-gradient-to-br from-[#050508] to-[#0a0a0f]">
+                                <svg id="networkSvg" class="w-full h-full"></svg>
+                            </div>
+                        </div>
+
+                        <!-- Live Feed Table -->
+                        <div class="glass-card rounded-2xl overflow-hidden">
+                            <div
+                                class="px-5 py-3 border-b border-white/10 bg-black/40 flex items-center justify-between">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                                    <h2 class="text-xs font-bold text-zinc-300 uppercase tracking-wider">Live
+                                        Transaction Stream</h2>
+                                </div>
+                                <span class="text-[9px] text-zinc-500 font-mono">real-time updates</span>
+                            </div>
+                            <div class="overflow-y-auto h-[280px] custom-scroll">
+                                <table class="w-full text-left">
+                                    <thead class="sticky top-0 bg-[#0a0a0f] z-10">
+                                        <tr
+                                            class="text-[9px] text-zinc-500 uppercase tracking-wider border-b border-white/5">
+                                            <th class="px-4 py-2 font-bold">ID</th>
+                                            <th class="px-4 py-2 font-bold">Time</th>
+                                            <th class="px-4 py-2 font-bold">Path</th>
+                                            <th class="px-4 py-2 font-bold">Amount</th>
+                                            <th class="px-4 py-2 font-bold">Risk</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="feedTableBody" class="divide-y divide-white/5"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Details & AI -->
+                    <div class="space-y-5">
+                        <!-- Transaction Details -->
+                        <div class="glass-card rounded-2xl overflow-hidden">
+                            <div class="px-5 py-3 border-b border-white/10 bg-black/40">
+                                <h2 class="text-xs font-bold text-zinc-300 uppercase tracking-wider">🔍 Transaction
+                                    Context</h2>
+                            </div>
+                            <div id="detailsPanel" class="p-5 space-y-3">
+                                <!-- Dynamic content -->
+                            </div>
+                        </div>
+
+                        <!-- AI Reasoning Panel -->
+                        <div class="glass-card rounded-2xl overflow-hidden relative">
+                            <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-2xl rounded-full"></div>
+                            <div class="px-5 py-3 border-b border-white/10 bg-black/40">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+                                        </path>
+                                    </svg>
+                                    <h2 class="text-xs font-bold text-zinc-300 uppercase tracking-wider">AI Fraud
+                                        Reasoning Engine</h2>
+                                </div>
+                            </div>
+                            <div id="aiPanel" class="p-5 min-h-[200px]">
+                                <!-- Dynamic content -->
+                            </div>
+                        </div>
+
+                        <!-- Cluster Insight + Actions -->
+                        <div class="glass-card rounded-2xl p-5 relative overflow-hidden">
+                            <div class="absolute inset-0 cyber-grid-overlay opacity-10"></div>
+                            <div class="relative z-10">
+                                <div class="flex items-center gap-2 mb-3">
+                                    <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor"
+                                        viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                                        </path>
+                                    </svg>
+                                    <h3 class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Cluster
+                                        Intelligence</h3>
+                                </div>
+                                <div id="clusterPanel" class="text-sm text-zinc-300 leading-relaxed mb-4">
+                                    <!-- Dynamic -->
+                                </div>
+                                <div class="grid grid-cols-2 gap-3 mt-3">
+                                    <button
+                                        class="bg-gradient-to-r from-rose-600/20 to-rose-700/10 text-rose-400 border border-rose-500/30 hover:bg-rose-500/20 py-2 rounded-lg text-[11px] font-bold transition-all uppercase tracking-wider">⛔
+                                        Isolate</button>
+                                    <button
+                                        class="bg-zinc-800/50 text-zinc-300 border border-zinc-600 hover:bg-zinc-700 py-2 rounded-lg text-[11px] font-bold transition-all uppercase tracking-wider">✓
+                                        Dismiss</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="mock-data.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
