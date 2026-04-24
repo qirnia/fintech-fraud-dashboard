@@ -40,3 +40,16 @@ build/
 out/
 .next/
 .nuxt/
+
+# Python
+venv/
+env/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Data
+*.csv
+
+#gcp
+gcp-credentials.json
