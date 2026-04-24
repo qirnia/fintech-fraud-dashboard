@@ -335,22 +335,10 @@ function selectTransaction(txn) {
 }
 
 /**
- * Initializes the dashboard with mock data
+ * Initializes the dashboard
  */
 function initializeDashboard() {
-    if (typeof transactions !== 'undefined' && typeof globalSummary !== 'undefined') {
-        allTransactions = transactions;
-        summaryData = globalSummary;
-
-        updateSummaryCards(globalSummary);
-        renderFeed(transactions);
-
-        // Select first high-risk transaction by default
-        const defaultTxn = transactions.find(t => t.risk_level === 'CRITICAL' || t.risk_level === 'HIGH') || transactions[0];
-        if (defaultTxn) selectTransaction(defaultTxn);
-    } else {
-        console.error('Mock data not loaded. Check mock-data.js');
-    }
+    enableLiveMode();
 }
 
 /**
@@ -361,8 +349,7 @@ function connectWebSocket() {
         wsConnection.close();
     }
 
-    // Default WebSocket URL - update this to match your backend
-    const wsUrl = 'ws://localhost:8080/ws';
+    const wsUrl = 'ws://localhost:8000/ws/dashboard';
 
     try {
         wsConnection = new WebSocket(wsUrl);
@@ -377,24 +364,47 @@ function connectWebSocket() {
             try {
                 const data = JSON.parse(event.data);
                 console.log('Live data received:', data);
+                
+                if (data.transaction && data.ai_analysis) {
+                    const txn = data.transaction;
+                    const ai = data.ai_analysis;
+                    
+                    const risk_score = Math.round(ai.risk_score * 100);
+                    let risk_level = 'LOW';
+                    if (risk_score >= 75) risk_level = 'CRITICAL';
+                    else if (risk_score >= 45) risk_level = 'HIGH';
 
-                // Handle different message types
-                if (data.type === 'transaction') {
-                    // Add new transaction to the list
-                    allTransactions.unshift(data.payload);
+                    const frontendTxn = {
+                        transaction_id: txn.nameOrig + '-' + txn.step,
+                        timestamp: new Date().toISOString(),
+                        sender: txn.nameOrig,
+                        receiver: txn.nameDest,
+                        amount: txn.amount,
+                        risk_score: risk_score,
+                        risk_level: risk_level,
+                        explanation: ai.explanation,
+                        pattern_tags: [txn.type],
+                        graph: {
+                            nodes: [
+                                { id: txn.nameOrig, label: "Sender", flagged: risk_score >= 75 },
+                                { id: txn.nameDest, label: "Receiver", flagged: false }
+                            ],
+                            edges: [
+                                { source: txn.nameOrig, target: txn.nameDest, amount: txn.amount }
+                            ]
+                        }
+                    };
+
+                    allTransactions.unshift(frontendTxn);
                     if (allTransactions.length > 50) allTransactions.pop();
                     renderFeed(allTransactions);
 
-                    // Update summary if provided
-                    if (data.summary) {
-                        summaryData = data.summary;
-                        updateSummaryCards(summaryData);
+                    // Auto-select if critical and not already viewing one
+                    if (risk_score >= 75 && (!currentTransaction || currentTransaction.risk_score < 75)) {
+                        selectTransaction(frontendTxn);
+                    } else if (!currentTransaction) {
+                        selectTransaction(frontendTxn);
                     }
-                } else if (data.type === 'summary') {
-                    summaryData = data.payload;
-                    updateSummaryCards(summaryData);
-                } else if (data.type === 'update' && data.transaction) {
-                    selectTransaction(data.transaction);
                 }
             } catch (err) {
                 console.error('Error parsing WebSocket message:', err);
@@ -442,8 +452,9 @@ function enableMockMode() {
         wsConnection = null;
     }
 
-    // Reload mock data
-    initializeDashboard();
+    // Reload dashboard
+    // Mock mode logic is removed; live mode is standard now
+    console.warn("Mock mode is disabled. Please connect to the backend.");
 }
 
 /**
