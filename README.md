@@ -19,7 +19,7 @@ From the root directory, navigate to the `backend` folder and set up a virtual e
 
 ```bash
 cd backend
-python3 -m venv venv
+python3.12 -m venv venv
 source venv/bin/activate  # On Windows use: venv\Scripts\activate
 pip install -r requirements.txt
 ```
