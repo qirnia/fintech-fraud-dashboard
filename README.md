@@ -1,6 +1,6 @@
 # Fintech Fraud Dashboard
 
-A real-time "Palantir-lite" fraud detection dashboard built for hackathons. This project ingests transaction data, builds an in-memory graph ontology to detect fraud networks using `NetworkX`, evaluates risk using the `google-genai` SDK with Gemini 2.5 Flash, and streams insights via WebSockets to a modern frontend.
+A real-time fraud detection dashboard built myAI Future Hackathon. This project ingests transaction data, builds an in-memory graph ontology to detect fraud networks using `NetworkX`, evaluates risk using the `google-genai` SDK with Gemini 2.5 Flash, and streams insights via WebSockets to a modern frontend.
 
 ## Architecture
 - **Backend:** FastAPI, Uvicorn, NetworkX (Graph Ontology), Google GenAI SDK (Gemini)
