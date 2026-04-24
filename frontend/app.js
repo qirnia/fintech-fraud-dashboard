@@ -349,7 +349,7 @@ function connectWebSocket() {
         wsConnection.close();
     }
 
-    const wsUrl = 'ws://localhost:8000/ws/dashboard';
+    const wsUrl = 'wss://aegis-backend-14827361815.asia-southeast1.run.app/ws/dashboard';
 
     try {
         wsConnection = new WebSocket(wsUrl);

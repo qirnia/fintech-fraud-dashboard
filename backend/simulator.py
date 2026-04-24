@@ -4,7 +4,7 @@ import json
 import httpx
 import pandas as pd
 
-API_URL = "http://localhost:8000/ingest"
+API_URL = "https://aegis-backend-14827361815.asia-southeast1.run.app/ingest"
 CSV_FILE = "../paysim.csv"
 
 def run_simulator():
